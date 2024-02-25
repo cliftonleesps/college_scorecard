@@ -1,5 +1,5 @@
 library(tidyverse)
-
+library(mice)
 start_time <- Sys.time()
 
 vars <- read_csv("data/variables.csv", col_type="cfc")
@@ -35,17 +35,24 @@ for (i in 1:ncol(insts)) {
 }
 insts <- insts[-c(too_many_na)]
 
+dim(insts)
+insts$OPEID6 <- as.numeric(insts$OPEID6)
+insts <- insts[, !sapply(insts, is.character)]
+
+
+cnames <- colnames(insts)
+for (n in cnames) {
+  if (sum(is.na(insts[,n]) > 0)) {
+    na_name <- paste0(n, '_NA')
+    insts <- insts %>% mutate (!!na_name := ifelse(is.na(!!as.name(n)), 1, 0 ))
+  }
+}
+
+
+# remove factors
+insts <- insts[, !sapply(insts, is.factor)]
+insts[is.na(insts)] <- 0
+
+
 end_time <- Sys.time()
 print(end_time - start_time)
-
-
-
-
-
-
-vars <- read_csv("data/variables.csv", col_type="cfc")
-diffs <- vars %>% filter(v1 != v2)
-for (x in diffs$v2) {
-    print(paste(x, diffs[diffs$v1 == x,'type'], diffs[diffs$v2 == x,'type']))
-    vars[vars$v2 == x,'type'] <-  diffs[diffs$v1 == x,'type']
-}
